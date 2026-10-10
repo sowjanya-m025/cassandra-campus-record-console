@@ -15,10 +15,10 @@ nav a{display:block;padding:9px 12px;border-radius:6px;color:inherit;text-decora
 nav a:hover{background:#ffffff14}nav a.on{background:var(--ac);color:#fff}
 nav .st{margin-top:auto;font-size:12px;padding:10px 12px;border-top:1px solid #ffffff22}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}.dot.off{background:var(--er)}
-main{flex:1;min-width:0;padding:24px 28px;max-width:1280px}
+main{flex:1;min-width:0;padding:24px 28px}
 h2{margin:0 0 4px;font-size:22px;font-weight:600}.sub{color:var(--mu);margin:0 0 20px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:16px}
-.grid{display:grid;gap:14px;margin-bottom:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.grid{display:grid;gap:14px;margin-bottom:14px}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
 .kpi b{display:block;font-size:26px;font-weight:600}.kpi span,.mu{color:var(--mu)}
 h3{margin:0 0 10px;font-size:14px;font-weight:600}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -38,9 +38,13 @@ tr.r a{color:var(--tx);font-weight:500;text-decoration:none}tr.r a:hover{text-de
 .modal .card{width:min(520px,100%);max-height:90vh;overflow:auto}
 label{display:block;margin-bottom:10px;font-size:12px;color:var(--mu)}label input,label select{display:block;width:100%;margin-top:3px;font-size:14px}
 .err{color:var(--er);font-size:12px}
+a.tl{color:var(--ac);text-decoration:none}a.tl:hover{text-decoration:underline}a.tl.sel{color:var(--tx);font-weight:600}.row.sel{background:var(--hv)}
 pre{background:var(--hv);padding:10px;border-radius:6px;overflow:auto;margin:0;font-size:12px}
 .row{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
 svg text{fill:var(--mu);font-size:11px}
+@media(max-width:1100px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.g2{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){.g4{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:760px){body{flex-direction:column}nav{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:10px}nav h1{width:100%;margin:0 4px 4px}nav .st{display:none}main{padding:16px}}
 </style></head><body>
 <nav><h1>Campus Records Console</h1>
@@ -139,15 +143,16 @@ function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();
 // ---- explorer ----
 function rt(rows){if(!rows.length)return'<div class="empty">No rows returned</div>';const k=Object.keys(rows[0]);return `<div class="tw"><table><tr>${k.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${rows.map(r=>`<tr>${k.map(x=>`<td>${esc(r[x])}</td>`).join('')}</tr>`).join('')}</table></div>`}
 let ex={ks:'university',tb:'students'};
-async function expl(){const m=$('#m');m.innerHTML=skel();let sch,counts,Q,rows;
+async function expl(keep){const m=$('#m');if(keep!==true)m.innerHTML=skel();let sch,counts,Q,rows;
  try{[sch,counts,Q]=await Promise.all([api('/api/schema'),api('/api/counts'),api('/api/queries')]);
   if(!sch[ex.ks]?.[ex.tb])ex={ks:'university',tb:'students'};
   rows=await api(`/api/browse?ks=${ex.ks}&table=${ex.tb}`)}catch(e){return m.innerHTML=fail(e)}
  m.innerHTML=`<h2>Cassandra explorer</h2><p class="sub"><span class="dot ${S.online?'':'off'}"></span>${S.online?'Connected':'Disconnected'} · ${esc(S.h?.host||'')} ${S.h?.version?'· Cassandra '+esc(S.h.version):''}</p>
- <div class="grid g2"><div class="card"><h3>Keyspaces and tables</h3>${Object.entries(sch).map(([k,t])=>`<b>${k}</b>${Object.keys(t).map(n=>`<div class="row"><a href="#" onclick="ex={ks:'${k}',tb:'${n}'};expl();return false">${n}</a><span class="mu">${k==='university'?(counts[n]??0)+' records':'system'}</span></div>`).join('')}`).join('<br><br>')}</div>
+ <div class="grid g2"><div class="card"><h3>Keyspaces and tables</h3>${Object.entries(sch).map(([k,t])=>`<b>${k}</b>${Object.keys(t).map(n=>`<div class="row${k===ex.ks&&n===ex.tb?' sel':''}"><a href="#" class="tl${k===ex.ks&&n===ex.tb?' sel':''}" data-ks="${k}" data-tb="${n}"${k===ex.ks&&n===ex.tb?' aria-current="true"':''}>${n}</a><span class="mu">${k==='university'?(counts[n]??0)+' records':'system'}</span></div>`).join('')}`).join('<br><br>')}</div>
  <div class="card"><h3>Schema: ${ex.ks}.${ex.tb}</h3><div class="tw"><table><tr><th>Column</th><th>Type</th><th>Key</th></tr>${sch[ex.ks][ex.tb].map(c=>`<tr><td>${esc(c[0])}</td><td>${esc(c[1])}</td><td>${c[2]}</td></tr>`).join('')}</table></div></div></div>
  <div class="card" style="margin-bottom:14px"><h3>Records (first 15)</h3>${rt(rows)}</div>
  <div class="card"><h3>CQL query editor</h3><div class="bar"><select id="qs" style="flex:1;min-width:0"><option value="">Example queries…</option>${Q.map(q=>`<option value="${esc(q.cql)}">${esc(q.cql)}</option>`).join('')}</select></div><textarea id="qt" rows="4" spellcheck="false" placeholder="Write your own CQL, e.g. SELECT * FROM university.students LIMIT 5" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:13px;margin-bottom:8px"></textarea><div class="bar"><button class="p" id="rq">Run query</button><span class="mu">Ctrl/⌘ + Enter to run · one statement: SELECT, INSERT, UPDATE or DELETE (changes only in the university keyspace)</span></div><div id="qr"><div class="empty">Pick an example or write your own query, then run it.</div></div></div>`;
+ m.querySelectorAll('a[data-tb]').forEach(a=>a.onclick=e=>{e.preventDefault();ex={ks:a.dataset.ks,tb:a.dataset.tb};expl(true)});
  $('#qt').value=Q[0]?Q[0].cql:'';$('#qs').onchange=e=>{if(e.target.value)$('#qt').value=e.target.value};
  const runQ=async()=>{const cql=$('#qt').value.trim();if(!cql)return toast('Type a query first',1);const b=$('#rq');b.disabled=true;$('#qr').innerHTML='<div class="sk"></div><div class="sk"></div>';
   try{const r=await api('/api/queries/custom',{body:{cql}});S.students=null;

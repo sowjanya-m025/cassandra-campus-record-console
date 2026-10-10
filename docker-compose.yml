@@ -1,0 +1,29 @@
+services:
+  cassandra:
+    image: cassandra:4.1
+    container_name: campus-cassandra
+    ports:
+      # Host port 9043 -> Cassandra's native CQL port 9042 INSIDE the container.
+      # Bound to loopback so the unauthenticated database is not exposed to your network.
+      # CASSANDRA_PORT in .env must match the host port (9043).
+      - "127.0.0.1:9043:9042"
+    environment:
+      CASSANDRA_CLUSTER_NAME: campus-cluster
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_LISTEN_ADDRESS: 127.0.0.1
+      CASSANDRA_RPC_ADDRESS: 0.0.0.0
+      CASSANDRA_BROADCAST_RPC_ADDRESS: 127.0.0.1
+      CASSANDRA_SEEDS: 127.0.0.1
+      MAX_HEAP_SIZE: 1G
+      HEAP_NEWSIZE: 256M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 40s
+
+volumes:
+  cassandra_data:

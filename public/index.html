@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cassandra Campus Record Console</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f6f7;--card:#fff;--tx:#12202b;--mu:#5f6f7a;--bd:#dde3e7;--ac:#0e7c86;--ac2:#e0a030;--ok:#14803c;--er:#c0392b;--sb:#0f1f2e;--hv:#eef3f5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c151d;--card:#14212c;--tx:#e6edf1;--mu:#8fa2af;--bd:#243542;--ac:#3cc0cc;--ac2:#f0b84a;--ok:#4cc27a;--er:#ef7a6b;--sb:#08111a;--hv:#1b2c39}}
+:root[data-theme=dark]{--bg:#0c151d;--card:#14212c;--tx:#e6edf1;--mu:#8fa2af;--bd:#243542;--ac:#3cc0cc;--ac2:#f0b84a;--ok:#4cc27a;--er:#ef7a6b;--sb:#08111a;--hv:#1b2c39}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 "IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;min-height:100vh}
+nav{width:232px;background:var(--sb);color:#cfdbe2;padding:20px 12px;position:sticky;top:0;height:100vh;flex:none;display:flex;flex-direction:column;gap:4px}
+nav h1{font-size:16px;color:#fff;margin:0 8px 18px;font-weight:600;letter-spacing:.2px}
+nav a{display:block;padding:9px 12px;border-radius:6px;color:inherit;text-decoration:none;cursor:pointer}
+nav a:hover{background:#ffffff14}nav a.on{background:var(--ac);color:#fff}
+nav .st{margin-top:auto;font-size:12px;padding:10px 12px;border-top:1px solid #ffffff22}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}.dot.off{background:var(--er)}
+main{flex:1;min-width:0;padding:24px 28px;max-width:1280px}
+h2{margin:0 0 4px;font-size:22px;font-weight:600}.sub{color:var(--mu);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:16px}
+.grid{display:grid;gap:14px;margin-bottom:14px}.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.kpi b{display:block;font-size:26px;font-weight:600}.kpi span,.mu{color:var(--mu)}
+h3{margin:0 0 10px;font-size:14px;font-weight:600}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,textarea,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:6px;padding:7px 10px}
+button{cursor:pointer}button.p{background:var(--ac);border-color:var(--ac);color:#fff}button.d{color:var(--er)}button:hover{filter:brightness(.96)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{font-weight:600;color:var(--mu);cursor:pointer;user-select:none}tr.r:hover{background:var(--hv)}
+tr.r a{color:var(--tx);font-weight:500;text-decoration:none}tr.r a:hover{text-decoration:underline}
+.tag{padding:2px 8px;border-radius:10px;font-size:12px;background:var(--hv)}.tag.ok{color:var(--ok)}.tag.er{color:var(--er)}
+.empty{text-align:center;padding:36px;color:var(--mu)}
+.sk{height:14px;border-radius:4px;background:linear-gradient(90deg,var(--hv),var(--bd),var(--hv));background-size:200% 100%;animation:sh 1.2s infinite;margin:10px 0}@keyframes sh{to{background-position:-200% 0}}
+@media(prefers-reduced-motion:reduce){.sk{animation:none}}
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{background:var(--sb);color:#fff;padding:10px 14px;border-radius:6px;border-left:4px solid var(--ok);max-width:320px}.toast.er{border-color:var(--er)}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:40;padding:16px}
+.modal .card{width:min(520px,100%);max-height:90vh;overflow:auto}
+label{display:block;margin-bottom:10px;font-size:12px;color:var(--mu)}label input,label select{display:block;width:100%;margin-top:3px;font-size:14px}
+.err{color:var(--er);font-size:12px}
+pre{background:var(--hv);padding:10px;border-radius:6px;overflow:auto;margin:0;font-size:12px}
+.row{display:flex;gap:8px;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd)}
+svg text{fill:var(--mu);font-size:11px}
+@media(max-width:760px){body{flex-direction:column}nav{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;padding:10px}nav h1{width:100%;margin:0 4px 4px}nav .st{display:none}main{padding:16px}}
+</style></head><body>
+<nav><h1>Campus Records Console</h1>
+<a href="#dash" data-v="dash">Analytics dashboard</a><a href="#stu" data-v="stu">Student management</a><a href="#exp" data-v="exp">Cassandra explorer</a><a href="#mon" data-v="mon">Monitoring &amp; activity</a>
+<div class="st" id="side"></div></nav>
+<main id="m"></main><div id="toasts"></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const DEPTS=['Computer Science','Electronics','Mechanical','Civil','Business','Biotechnology'];
+const TODAY=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10),FROM='2022-06-01';
+let S={students:null,from:FROM,to:TODAY,q:'',dept:'',status:'',sort:'name',dir:1,page:1,view:'dash',online:false,h:null};
+// ---- API client ----
+async function api(p,o){let r;
+ try{r=await fetch(p,o&&o.body?{method:o.method||'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o.body)}:o)}
+ catch{throw Error('API server unreachable. Check that "npm start" is running.')}
+ const j=await r.json().catch(()=>({}));if(!r.ok){const e=Error(j.error||'Request failed ('+r.status+')');e.details=j.details;throw e}return j}
+async function health(){try{S.h=await api('/api/health');S.online=S.h.connected}catch(e){S.online=false;S.h={error:e.message}}side()}
+function side(){const h=S.h||{};$('#side').innerHTML=`<span class="dot ${S.online?'':'off'}"></span>${S.online?'Cassandra connected':'Disconnected'}<br><span style="opacity:.7">${esc(h.host||'no host')}${h.version?' · v'+esc(h.version):''}</span>`}
+async function load(force){if(!S.students||force)S.students=await api('/api/students');return S.students}
+function toast(t,er){const e=document.createElement('div');e.className='toast'+(er?' er':'');e.textContent=t;$('#toasts').append(e);setTimeout(()=>e.remove(),4200)}
+const skel=()=>'<div class="card"><div class="sk" style="width:40%"></div><div class="sk"></div><div class="sk"></div><div class="sk" style="width:70%"></div></div>';
+const fail=e=>`<div class="card empty"><b>Can't reach Cassandra</b><br>${esc(e.message)}<br><br><button class="p" onclick="S.students=null;health();go(S.view)">Retry connection</button></div>`;
+// ---- charts ----
+function bars(data,w=520,h=200,fmt=v=>v){const mx=Math.max(1,...data.map(d=>d.v)),bw=(w-30)/data.length;
+ return `<svg viewBox="0 0 ${w} ${h}" width="100%" role="img">${data.map((d,i)=>{const bh=(h-50)*d.v/mx,x=30+i*bw;return `<rect x="${x+4}" y="${h-30-bh}" width="${bw-8}" height="${bh}" rx="3" fill="var(--ac)"><title>${esc(d.l)}: ${fmt(d.v)}</title></rect><text x="${x+bw/2}" y="${h-14}" text-anchor="middle">${esc(d.l)}</text><text x="${x+bw/2}" y="${h-34-bh}" text-anchor="middle">${fmt(d.v)}</text>`}).join('')}</svg>`}
+function line(data,w=520,h=200){if(data.length<2)return'<div class="empty">Not enough data yet</div>';const mx=Math.max(1,...data.map(d=>d.v)),st=(w-50)/(data.length-1);
+ const pts=data.map((d,i)=>[30+i*st,h-30-(h-50)*d.v/mx]);
+ return `<svg viewBox="0 0 ${w} ${h}" width="100%"><path d="M${pts.map(p=>p.join(',')).join('L')}" fill="none" stroke="var(--ac)" stroke-width="2"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="var(--ac)"><title>${esc(data[i].l)}: ${data[i].v}</title></circle>`).join('')}<text x="30" y="${h-12}">${esc(data[0].l)}</text><text x="${w-20}" y="${h-12}" text-anchor="end">${esc(data.at(-1).l)}</text><text x="4" y="22">${mx}</text></svg>`}
+function actTable(l){return l.length?`<div class="tw"><table><tr><th>Time</th><th>Action</th><th>CQL</th><th>Latency</th><th>Status</th></tr>${l.map(x=>`<tr><td>${new Date(x.ts).toLocaleTimeString()}</td><td>${esc(x.action)}</td><td><code title="${esc(x.cql)}">${esc(x.cql.slice(0,60))}</code></td><td>${x.ms} ms</td><td><span class="tag ${x.ok?'ok':'er'}" title="${esc(x.msg)}">${x.ok?'Success':'Failed'}</span></td></tr>`).join('')}</table></div>`:'<div class="empty">No activity yet</div>'}
+// ---- dashboard ----
+async function dash(){const m=$('#m');m.innerHTML=skel();let rows,act;
+ try{[rows,act]=await Promise.all([load(true),api('/api/activity')])}catch(e){return m.innerHTML=fail(e)}
+ const f=rows.filter(s=>s.enrolled>=S.from&&s.enrolled<=S.to),bm={};f.forEach(s=>{const k=s.enrolled.slice(0,7);bm[k]=(bm[k]||0)+1});
+ const trend=Object.keys(bm).sort().map(k=>({l:k,v:bm[k]})),dc=DEPTS.map(d=>{const x=f.filter(s=>s.dept===d);return{l:d.split(' ')[0],v:x.length,g:x.length?x.reduce((a,s)=>a+s.gpa,0)/x.length:0}});
+ const sem=[1,2,3,4,5,6,7,8].map(n=>({l:'S'+n,v:f.filter(s=>s.semester===n).length}));
+ const em=new Set(),dup=f.filter(s=>em.size===em.add(s.email).size).length,bad=f.filter(s=>!/^\S+@\S+\.\S+$/.test(s.email)).length,nop=f.filter(s=>!s.phone).length,pct=n=>f.length?Math.round(100*(1-n/f.length)):100;
+ m.innerHTML=`<h2>Analytics dashboard</h2><p class="sub">Enrollment overview across departments and semesters.</p>
+ <div class="bar"><label style="margin:0">From <input type="date" id="df" value="${S.from}"></label><label style="margin:0">To <input type="date" id="dt" value="${S.to}"></label><button onclick="S.from=FROM;S.to=TODAY;dash()">Reset range</button></div>
+ ${f.length?'':'<div class="card empty" style="margin-bottom:14px"><b>No students in this range</b><br>Widen the dates to see more students.</div>'}
+ <div class="grid g4"><div class="card kpi"><span>Total students</span><b>${f.length}</b></div><div class="card kpi"><span>Departments</span><b>${new Set(f.map(s=>s.dept)).size}</b></div><div class="card kpi"><span>Average CGPA</span><b>${f.length?(f.reduce((a,s)=>a+s.gpa,0)/f.length).toFixed(2):'–'}</b></div><div class="card kpi"><span>On leave</span><b>${f.filter(s=>s.status!=='Active').length}</b></div></div>
+ <div class="grid g2"><div class="card"><h3>Enrollment trend by month</h3>${line(trend)}</div><div class="card"><h3>Department comparison (students)</h3>${bars(dc)}<div class="mu" style="margin-top:6px">Avg CGPA: ${dc.map(d=>d.l+' '+d.g.toFixed(2)).join(' · ')}</div></div>
+ <div class="card"><h3>Semester distribution</h3>${bars(sem)}</div>
+ <div class="card"><h3>Data quality</h3>${[['Valid email addresses',pct(bad)],['Records with phone',pct(nop)],['Unique emails',pct(dup)]].map(([l,p])=>`<div class="row"><span>${l}</span><span class="tag ${p>=98?'ok':'er'}">${p}%</span></div>`).join('')}<p class="mu">${bad} invalid email · ${dup} duplicate · ${nop} missing phone</p></div></div>
+ <div class="card"><h3>Recent activity</h3>${actTable(act.log.slice(0,6))}</div>`;
+ $('#df').onchange=e=>{S.from=e.target.value||FROM;dash()};$('#dt').onchange=e=>{S.to=e.target.value||TODAY;dash()}}
+// ---- students ----
+const PS=10;
+function filt(){let r=(S.students||[]).filter(s=>(!S.dept||s.dept===S.dept)&&(!S.status||s.status===S.status)&&(!S.q||(s.name+s.email).toLowerCase().includes(S.q.toLowerCase())));
+ return r.sort((a,b)=>(a[S.sort]>b[S.sort]?1:a[S.sort]<b[S.sort]?-1:0)*S.dir)}
+async function stu(){const m=$('#m');if(!S.students)m.innerHTML=skel();
+ try{await load()}catch(e){return m.innerHTML=fail(e)}
+ const r=filt(),pg=Math.max(1,Math.ceil(r.length/PS));S.page=Math.min(S.page,pg);const rows=r.slice((S.page-1)*PS,S.page*PS);
+ m.innerHTML=`<h2>Student management</h2><p class="sub">${r.length} of ${S.students.length} students.</p>
+ <div class="bar"><input id="q" placeholder="Search name or email" value="${esc(S.q)}"><select id="fd"><option value="">All departments</option>${DEPTS.map(d=>`<option ${S.dept===d?'selected':''}>${d}</option>`).join('')}</select><select id="fs"><option value="">Any status</option>${['Active','On leave'].map(d=>`<option ${S.status===d?'selected':''}>${d}</option>`).join('')}</select>
+ <span style="flex:1"></span><button class="p" onclick="openStudentForm()">Add student</button><button onclick="$('#csv').click()">Import CSV</button><button onclick="exp()">Export CSV</button><input type="file" id="csv" accept=".csv" hidden></div>
+ <div class="card tw">${rows.length?`<table><tr>${[['name','Name'],['dept','Department'],['semester','Sem'],['gpa','CGPA'],['enrolled','Enrolled'],['status','Status']].map(([k,l])=>`<th data-k="${k}">${l}${S.sort===k?(S.dir>0?' ▲':' ▼'):''}</th>`).join('')}<th></th></tr>
+ ${rows.map(s=>`<tr class="r"><td><a href="#" onclick="prof('${s.id}');return false">${esc(s.name)}</a><br><span class="mu">${esc(s.email)}</span></td><td>${esc(s.dept)}</td><td>${s.semester}</td><td>${s.gpa}</td><td>${esc(s.enrolled)}</td><td><span class="tag">${esc(s.status)}</span></td><td><button onclick="openStudentForm('${s.id}')">Edit</button> <button class="d" onclick="del('${s.id}')">Delete</button></td></tr>`).join('')}</table>`:'<div class="empty"><b>No students match</b><br>Clear the filters or add a new student.</div>'}</div>
+ <div class="bar" style="margin-top:10px"><button ${S.page<2?'disabled':''} onclick="S.page--;stu()">Previous</button><span class="mu">Page ${S.page} of ${pg}</span><button ${S.page>=pg?'disabled':''} onclick="S.page++;stu()">Next</button></div>`;
+ $('#q').oninput=e=>{S.q=e.target.value;S.page=1;clearTimeout(S.t);S.t=setTimeout(()=>{stu().then(()=>{const q=$('#q');q.focus();q.setSelectionRange(99,99)})},250)};
+ $('#fd').onchange=e=>{S.dept=e.target.value;S.page=1;stu()};$('#fs').onchange=e=>{S.status=e.target.value;S.page=1;stu()};
+ document.querySelectorAll('th[data-k]').forEach(t=>t.onclick=()=>{const k=t.dataset.k;S.dir=S.sort===k?-S.dir:1;S.sort=k;stu()});
+ $('#csv').onchange=imp}
+function modal(h){const o=document.createElement('div');o.className='modal';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.tabIndex=-1;o.innerHTML=`<div class="card">${h}</div>`;o.onclick=e=>{if(e.target===o)o.remove()};o.onkeydown=e=>{if(e.key==='Escape')o.remove()};document.body.append(o);o.focus();return o}
+async function prof(id){const s=S.students.find(x=>x.id===id),o=modal('<div class="sk"></div><div class="sk"></div>');let h=[];
+ try{h=await api('/api/students/'+id+'/enrollments')}catch(e){toast(e.message,1)}
+ o.querySelector('.card').innerHTML=`<h3>${esc(s.name)}</h3><p class="mu">${esc(s.email)} · ${esc(s.phone)||'No phone'}</p><div class="row"><span>Department</span><span>${esc(s.dept)}</span></div><div class="row"><span>Semester</span><span>${s.semester}</span></div><div class="row"><span>CGPA</span><span>${s.gpa}</span></div><div class="row"><span>Enrolled</span><span>${esc(s.enrolled)} · ${esc(s.status)}</span></div><h3 style="margin-top:14px">Enrollment history</h3>${h.length?`<table>${h.map(x=>`<tr><td>${esc(x.term)}</td><td>${x.credits} credits</td><td>GPA ${x.gpa}</td></tr>`).join('')}</table>`:'<div class="empty">No enrollment records yet</div>'}<p><button onclick="this.closest('.modal').remove()">Close</button></p>`}
+function openStudentForm(id){const s=id?S.students.find(x=>x.id===id):{name:'',email:'',dept:'',semester:1,gpa:7,phone:''};
+ const o=modal(`<h3>${id?'Edit student':'Add student'}</h3>${[['name','Full name','text'],['email','Email','text'],['phone','Phone (optional)','text'],['semester','Semester','number'],['gpa','CGPA','number']].map(([k,l,t])=>`<label>${l}<input name="${k}" type="${t}" step="any" value="${esc(s[k])}"><span class="err" id="e_${k}"></span></label>`).join('')}
+ <label>Department<select name="dept"><option value="">Select…</option>${DEPTS.map(d=>`<option ${s.dept===d?'selected':''}>${d}</option>`).join('')}</select><span class="err" id="e_dept"></span></label>
+ <div class="bar"><button class="p" id="sv">Save student</button><button id="cx">Cancel</button></div>`);
+ const showErr=er=>{o.querySelectorAll('.err').forEach(x=>x.textContent='');Object.entries(er||{}).forEach(([k,v])=>{const e=$('#e_'+k);if(e)e.textContent=v})};
+ $('#cx').onclick=()=>o.remove();$('#sv').onclick=async()=>{const d={};o.querySelectorAll('[name]').forEach(i=>d[i.name]=i.value.trim());
+  const btn=$('#sv');btn.disabled=true;btn.textContent='Saving…';
+  try{await api(id?'/api/students/'+id:'/api/students',{method:id?'PUT':'POST',body:d});o.remove();S.students=null;toast(id?'Student updated':'Student created');go(S.view)}
+  catch(e){btn.disabled=false;btn.textContent='Save student';if(e.details)showErr(e.details);else toast('Save failed: '+e.message,1)}}}
+async function del(id){const s=S.students.find(x=>x.id===id);if(!confirm('Delete '+s.name+'? This cannot be undone.'))return;
+ try{await api('/api/students/'+id,{method:'DELETE'});S.students=null;toast('Student deleted');go(S.view)}catch(e){toast('Delete failed: '+e.message,1)}}
+const cell=v=>{let s=String(v??'');if(/^[=+\-@\t\r]/.test(s))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};
+function exp(){const c='name,email,dept,semester,gpa,phone\n'+filt().map(s=>[s.name,s.email,s.dept,s.semester,s.gpa,s.phone].map(cell).join(',')).join('\n');
+ try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='students.csv';a.click();toast('Exported '+filt().length+' rows')}
+ catch{toast('Export failed',1)}}
+function csvRows(t){const out=[];let row=[],c='',q=false;t=t.replace(/^\uFEFF/,'');
+ for(let i=0;i<t.length;i++){const ch=t[i];
+  if(q){if(ch==='"'){if(t[i+1]==='"'){c+='"';i++}else q=false}else c+=ch}
+  else if(ch==='"')q=true;else if(ch===','){row.push(c);c=''}
+  else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&t[i+1]==='\n')i++;row.push(c);out.push(row);row=[];c=''}
+  else c+=ch}
+ if(c!==''||row.length){row.push(c);out.push(row)}
+ return out.filter(r=>r.some(x=>x.trim()))}
+function imp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{
+ const L=csvRows(r.result),hd=L[0]&&/^\s*name\s*$/i.test(L[0][0])?1:0;
+ const rows=L.slice(hd).map(([n,em,d,sm,g,p])=>({name:(n||'').trim(),email:(em||'').trim(),dept:(d||'').trim(),semester:(sm||'').trim(),gpa:(g||'').trim(),phone:(p||'').trim()}));
+ try{const res=await api('/api/students/bulk',{body:{rows}});S.students=null;
+  toast(`Imported ${res.imported} rows, ${res.skipped.length} skipped`+(res.skipped.length?` (${res.skipped[0]})`:''),res.skipped.length&&!res.imported);stu()}
+ catch(er){toast('Import failed: '+er.message,1)}e.target.value=''};r.readAsText(f)}
+// ---- explorer ----
+function rt(rows){if(!rows.length)return'<div class="empty">No rows returned</div>';const k=Object.keys(rows[0]);return `<div class="tw"><table><tr>${k.map(x=>`<th>${esc(x)}</th>`).join('')}</tr>${rows.map(r=>`<tr>${k.map(x=>`<td>${esc(r[x])}</td>`).join('')}</tr>`).join('')}</table></div>`}
+let ex={ks:'university',tb:'students'};
+async function expl(){const m=$('#m');m.innerHTML=skel();let sch,counts,Q,rows;
+ try{[sch,counts,Q]=await Promise.all([api('/api/schema'),api('/api/counts'),api('/api/queries')]);
+  if(!sch[ex.ks]?.[ex.tb])ex={ks:'university',tb:'students'};
+  rows=await api(`/api/browse?ks=${ex.ks}&table=${ex.tb}`)}catch(e){return m.innerHTML=fail(e)}
+ m.innerHTML=`<h2>Cassandra explorer</h2><p class="sub"><span class="dot ${S.online?'':'off'}"></span>${S.online?'Connected':'Disconnected'} · ${esc(S.h?.host||'')} ${S.h?.version?'· Cassandra '+esc(S.h.version):''}</p>
+ <div class="grid g2"><div class="card"><h3>Keyspaces and tables</h3>${Object.entries(sch).map(([k,t])=>`<b>${k}</b>${Object.keys(t).map(n=>`<div class="row"><a href="#" onclick="ex={ks:'${k}',tb:'${n}'};expl();return false">${n}</a><span class="mu">${k==='university'?(counts[n]??0)+' records':'system'}</span></div>`).join('')}`).join('<br><br>')}</div>
+ <div class="card"><h3>Schema: ${ex.ks}.${ex.tb}</h3><div class="tw"><table><tr><th>Column</th><th>Type</th><th>Key</th></tr>${sch[ex.ks][ex.tb].map(c=>`<tr><td>${esc(c[0])}</td><td>${esc(c[1])}</td><td>${c[2]}</td></tr>`).join('')}</table></div></div></div>
+ <div class="card" style="margin-bottom:14px"><h3>Records (first 15)</h3>${rt(rows)}</div>
+ <div class="card"><h3>CQL query editor</h3><div class="bar"><select id="qs" style="flex:1;min-width:0"><option value="">Example queries…</option>${Q.map(q=>`<option value="${esc(q.cql)}">${esc(q.cql)}</option>`).join('')}</select></div><textarea id="qt" rows="4" spellcheck="false" placeholder="Write your own CQL, e.g. SELECT * FROM university.students LIMIT 5" style="width:100%;font-family:ui-monospace,Menlo,monospace;font-size:13px;margin-bottom:8px"></textarea><div class="bar"><button class="p" id="rq">Run query</button><span class="mu">Ctrl/⌘ + Enter to run · one statement: SELECT, INSERT, UPDATE or DELETE (changes only in the university keyspace)</span></div><div id="qr"><div class="empty">Pick an example or write your own query, then run it.</div></div></div>`;
+ $('#qt').value=Q[0]?Q[0].cql:'';$('#qs').onchange=e=>{if(e.target.value)$('#qt').value=e.target.value};
+ const runQ=async()=>{const cql=$('#qt').value.trim();if(!cql)return toast('Type a query first',1);const b=$('#rq');b.disabled=true;$('#qr').innerHTML='<div class="sk"></div><div class="sk"></div>';
+  try{const r=await api('/api/queries/custom',{body:{cql}});S.students=null;
+   $('#qr').innerHTML=r.write?`<p class="mu">Statement executed · ${r.ms} ms</p>`:`<p class="mu">${r.count} row(s)${r.truncated?' (showing first 200)':''} · executed in ${r.ms} ms</p>${rt(r.rows)}`;if(r.write)toast('Statement executed')}
+  catch(e){$('#qr').innerHTML=`<p class="err">${esc(e.message)}</p>`;toast('Query failed',1)}
+  b.disabled=false};
+ $('#rq').onclick=runQ;$('#qt').onkeydown=e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter')runQ()}}
+// ---- monitoring ----
+async function mon(){const m=$('#m');m.innerHTML=skel();let a;await health();
+ try{a=await api('/api/activity')}catch(e){return m.innerHTML=fail(e)}
+ const wr=a.log.filter(x=>/^Student|^Bulk/.test(x.action)),h=S.h||{};
+ m.innerHTML=`<h2>Monitoring &amp; activity</h2><p class="sub">Every application action and the CQL it ran.</p>
+ <div class="bar"><span class="tag ${S.online?'ok':'er'}"><span class="dot ${S.online?'':'off'}"></span>${S.online?'Connected':'Disconnected'}</span><span class="mu">${esc(h.host||'')} ${h.ms!=null?'· ping '+h.ms+' ms':''} ${h.error?'· '+esc(h.error):''}</span><button onclick="mon()">Check connection</button></div>
+ <div class="grid g4"><div class="card kpi"><span>Operations</span><b>${a.stats.total}</b></div><div class="card kpi"><span>Successful</span><b style="color:var(--ok)">${a.stats.ok}</b></div><div class="card kpi"><span>Failed</span><b style="color:var(--er)">${a.stats.failed}</b></div><div class="card kpi"><span>Avg latency</span><b>${a.stats.avgMs} ms</b></div></div>
+ <div class="grid g2"><div class="card"><h3>Query latency (last ${a.latency.length})</h3>${line(a.latency.map((v,i)=>({l:'#'+(i+1),v})))}</div>
+ <div class="card"><h3>Student changes</h3>${wr.length?wr.slice(0,8).map(x=>`<div class="row"><span>${esc(x.action)}</span><span class="tag ${x.ok?'ok':'er'}">${new Date(x.ts).toLocaleTimeString()}</span></div>`).join(''):'<div class="empty">No student changes yet. Add, edit or delete a student.</div>'}</div></div>
+ <div class="card"><h3>Operation history</h3>${actTable(a.log.slice(0,30))}</div>`}
+const V={dash,stu,exp:expl,mon};
+function go(v){S.view=v;document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on',a.dataset.v===v));V[v]()}
+document.querySelectorAll('nav a').forEach(a=>a.onclick=e=>{e.preventDefault();go(a.dataset.v)});
+health();setInterval(health,10000);go('dash');
+</script></body></html>
